@@ -1,0 +1,363 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+}
+
+body {
+  background: #1e1e1e;
+  color: #eee;
+  font-family: system-ui, -apple-system, sans-serif;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  height: 120px;
+  flex-shrink: 0;
+  background: #2a2a2a;
+  border-bottom: 1px solid #444;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 12px;
+}
+
+.tool-btn {
+  background: #333;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  min-width: 96px;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.tool-btn:hover:not(:disabled) {
+  background: #3d3d3d;
+  border-color: #6a6a6a;
+}
+
+.tool-btn:active:not(:disabled) {
+  background: #4a4a4a;
+}
+
+.tool-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.tool-btn svg {
+  width: 36px;
+  height: 36px;
+}
+
+.toggle-btn.active:not(:disabled) {
+  background: #3a5a85;
+  border-color: #6da0d8;
+  color: #fff;
+}
+
+.toggle-btn.active:not(:disabled):hover {
+  background: #4569a0;
+}
+
+.toggle-btn .icon-hidden,
+.toggle-btn .label-hidden {
+  display: none;
+}
+
+.toggle-btn:not(.active) .icon-visible,
+.toggle-btn:not(.active) .label-visible {
+  display: none;
+}
+
+.toggle-btn:not(.active) .icon-hidden,
+.toggle-btn:not(.active) .label-hidden {
+  display: inline-block;
+}
+
+.floating-stack {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 5;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.floating-stack.hidden {
+  display: none;
+}
+
+.floating-control {
+  background: rgba(40, 40, 40, 0.92);
+  border: 1px solid #4a4a4a;
+  border-radius: 10px;
+  padding: 10px 14px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+}
+
+#gridCellsControl {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#gridTransformControl {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.island-title {
+  font-size: 0.85rem;
+  color: #ddd;
+  font-weight: 500;
+  text-align: center;
+}
+
+.floating-label {
+  font-size: 0.85rem;
+  color: #ddd;
+  font-weight: 500;
+}
+
+.transform-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 28px);
+  grid-template-rows: repeat(5, 28px);
+  gap: 4px;
+  position: relative;
+}
+
+.transform-box {
+  grid-column: 2 / 5;
+  grid-row: 2 / 5;
+  margin: -3px;
+  border: 1.5px dashed rgba(120, 210, 255, 0.85);
+  background: rgba(80, 180, 255, 0.1);
+  border-radius: 3px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.transform-btn {
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ddd;
+  padding: 0;
+  position: relative;
+  z-index: 1;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.transform-btn:hover:not(:disabled) {
+  background: #4a4a4a;
+  border-color: #7a7a7a;
+}
+
+.transform-btn:active:not(:disabled) {
+  background: #5a5a5a;
+}
+
+.transform-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.transform-btn svg {
+  width: 16px;
+  height: 16px;
+  display: block;
+}
+
+#topOutBtn { grid-column: 3; grid-row: 1; }
+#topInBtn { grid-column: 3; grid-row: 2; }
+#leftOutBtn { grid-column: 1; grid-row: 3; }
+#leftInBtn { grid-column: 2; grid-row: 3; }
+#rightInBtn { grid-column: 4; grid-row: 3; }
+#rightOutBtn { grid-column: 5; grid-row: 3; }
+#bottomInBtn { grid-column: 3; grid-row: 4; }
+#bottomOutBtn { grid-column: 3; grid-row: 5; }
+
+.nudge-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.grid-controls {
+  display: flex;
+  align-items: stretch;
+}
+
+.step-btn {
+  background: #333;
+  color: #eee;
+  border: 1px solid #555;
+  width: 36px;
+  font-size: 1.25rem;
+  line-height: 1;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.step-btn:hover {
+  background: #3d3d3d;
+  border-color: #6a6a6a;
+}
+
+.step-btn:active {
+  background: #4a4a4a;
+}
+
+.grid-controls .step-btn:first-child {
+  border-radius: 6px 0 0 6px;
+  border-right: none;
+}
+
+.grid-controls .step-btn:last-child {
+  border-radius: 0 6px 6px 0;
+  border-left: none;
+}
+
+#gridInput {
+  width: 64px;
+  background: #1e1e1e;
+  color: #eee;
+  border: 1px solid #555;
+  text-align: center;
+  font: inherit;
+  font-size: 1rem;
+  -moz-appearance: textfield;
+}
+
+#gridInput::-webkit-outer-spin-button,
+#gridInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+#gridInput:focus {
+  outline: none;
+  border-color: #88aaff;
+}
+
+.tool-label {
+  font-size: 0.85rem;
+  color: #ccc;
+}
+
+.tool-info {
+  margin-left: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  padding: 14px 18px;
+}
+
+.tool-info-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: #aaa;
+}
+
+.tool-info-label-sub {
+  margin-top: 8px;
+}
+
+.tool-info-value {
+  font-size: 1.5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: #eee;
+}
+
+.tool-info-value-sub {
+  font-size: 1.05rem;
+  font-weight: 500;
+  color: #bbb;
+}
+
+#app {
+  flex: 1;
+  position: relative;
+  min-height: 0;
+}
+
+#canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.dropzone {
+  position: absolute;
+  inset: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #555;
+  border-radius: 8px;
+  text-align: center;
+  z-index: 10;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.dropzone.dragging {
+  background: rgba(80, 130, 200, 0.1);
+  border-color: #5588cc;
+}
+
+.dropzone.hidden {
+  display: none;
+}
+
+.file-label {
+  color: #88aaff;
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.hint {
+  font-size: 0.85em;
+  color: #888;
+}
+
+kbd {
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 0.9em;
+}
