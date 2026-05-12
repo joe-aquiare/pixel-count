@@ -19,6 +19,23 @@ body {
   flex-direction: column;
 }
 
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+input[type="number"] {
+    -moz-appearance: textfield;
+    appearance: textfield;
+}
+
+input:focus {
+    outline: none;
+    box-shadow: none;
+    border-color: inherit;
+}
+
 .toolbar {
   height: 78px;
   flex-shrink: 0;
@@ -125,12 +142,39 @@ body {
   padding: 10px 10px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(6px);
+  width: 375px;
+}
+
+.floating-control.hidden {
+  display: none !important;
 }
 
 #gridCellsControl {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.crop-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
+}
+
+.crop-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.crop-field input {
+  background: #1e1e1e;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px 6px;
+  font: inherit;
+  font-size: 0.9rem;
 }
 
 .cells-row {
@@ -183,8 +227,9 @@ body {
   color: #ddd;
   font-weight: 500;
   position: absolute;
-  left: 15px;
-  top: 12px;
+  left: 9px;
+  top: 6px;
+  opacity: .6;
 }
 
 #floating-control-bg {

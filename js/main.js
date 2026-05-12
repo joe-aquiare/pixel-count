@@ -23,6 +23,12 @@ const gridInputY = document.getElementById('gridInputY');
 const gridOpacityInput = document.getElementById('gridOpacityInput');
 const gridColorInput = document.getElementById('gridColorInput');
 const floatingStack = document.getElementById('floatingStack');
+const gridCellsControl = document.getElementById('gridCellsControl');
+const gridTransformControl = document.getElementById('gridTransformControl');
+const cropTopInput = document.getElementById('cropTopInput');
+const cropBottomInput = document.getElementById('cropBottomInput');
+const cropLeftInput = document.getElementById('cropLeftInput');
+const cropRightInput = document.getElementById('cropRightInput');
 const resolutionValue = document.getElementById('resolutionValue');
 const sourceResolution = document.getElementById('sourceResolution');
 const cursorPosition = document.getElementById('cursorPosition');
@@ -42,13 +48,19 @@ const nudgeInput = document.getElementById('nudgeInput');
 
 let toolbar;
 let gridTransform;
+const formatCropAmount = (n) => {
+  const rounded = Math.round(n * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+};
+
 const viewport = createViewport(canvas, {
   onGridChange: (estimate) => {
     const hasGrid = estimate !== null;
     toolbar?.setResolutionEstimate(estimate);
     toolbar?.setGridToolsAvailable(hasGrid);
     gridTransform?.setAvailable(hasGrid);
-    floatingStack.classList.toggle('hidden', !hasGrid);
+    gridCellsControl.classList.toggle('hidden', !hasGrid);
+    gridTransformControl.classList.toggle('hidden', !hasGrid);
   },
   onGridVisibilityChange: (visible) => toolbar?.setGridVisibility(visible),
   onCursorMove: ({ imageX, imageY, pixelX, pixelY }) => {
@@ -56,6 +68,16 @@ const viewport = createViewport(canvas, {
     pixelPosition.textContent = (pixelX !== null && pixelY !== null)
       ? `${pixelX}, ${pixelY}`
       : '—';
+  },
+  onCropChange: (crop) => {
+    if (!crop) return;
+    const setIfNotEditing = (input, value) => {
+      if (document.activeElement !== input) input.value = formatCropAmount(value);
+    };
+    setIfNotEditing(cropTopInput, crop.top);
+    setIfNotEditing(cropBottomInput, crop.bottom);
+    setIfNotEditing(cropLeftInput, crop.left);
+    setIfNotEditing(cropRightInput, crop.right);
   },
 });
 
@@ -101,6 +123,26 @@ gridOpacityInput.addEventListener('input', (e) => {
 gridColorInput.addEventListener('input', (e) => {
   viewport.setGridColor(e.target.value);
 });
+
+const wireCropInput = (input, side) => {
+  const apply = () => {
+    if (input.value !== '') viewport.setCropAmount(side, input.value);
+    const crop = viewport.getCropAmounts();
+    if (crop) input.value = formatCropAmount(crop[side]);
+  };
+
+  input.addEventListener('input', () => {
+    if (input.value === '') return;
+    viewport.setCropAmount(side, input.value);
+  });
+  input.addEventListener('change', apply);
+  input.addEventListener('blur', apply);
+};
+
+wireCropInput(cropTopInput, 'top');
+wireCropInput(cropBottomInput, 'bottom');
+wireCropInput(cropLeftInput, 'left');
+wireCropInput(cropRightInput, 'right');
 
 const initColoris = () => {
   if (typeof window.Coloris !== 'function') return;
@@ -241,6 +283,7 @@ setupImageLoader({
   fileInput,
   onImageLoaded: (img) => {
     dropzone.classList.add('hidden');
+    floatingStack.classList.remove('hidden');
     sourceResolution.textContent = `${img.width} × ${img.height}`;
     viewport.setImage(img);
     toolbar.setZoomEnabled(true);

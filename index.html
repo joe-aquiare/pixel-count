@@ -53,7 +53,29 @@
     <canvas id="canvas"></canvas>
     <div class="floating-stack hidden" id="floatingStack">
       <div id="floating-control-bg"></div>
-      <div class="floating-control" id="gridCellsControl" title="Number of horizontal and vertical pixels inside the grid box. Right-click and drag on the image to draw a grid.">
+      <div class="floating-control" id="cropControl" title="Crop amounts from each edge of the source image.">
+        <span class="island-title">Image Crop</span>
+        <br><br>
+        <div class="crop-grid">
+          <label class="crop-field">
+            <span class="floating-label">Top</span>
+            <input id="cropTopInput" type="number" min="0" step="1" value="0" aria-label="Top crop amount">
+          </label>
+          <label class="crop-field">
+            <span class="floating-label">Bottom</span>
+            <input id="cropBottomInput" type="number" min="0" step="1" value="0" aria-label="Bottom crop amount">
+          </label>
+          <label class="crop-field">
+            <span class="floating-label">Left</span>
+            <input id="cropLeftInput" type="number" min="0" step="1" value="0" aria-label="Left crop amount">
+          </label>
+          <label class="crop-field">
+            <span class="floating-label">Right</span>
+            <input id="cropRightInput" type="number" min="0" step="1" value="0" aria-label="Right crop amount">
+          </label>
+        </div>
+      </div>
+      <div class="floating-control hidden" id="gridCellsControl" title="Number of horizontal and vertical pixels inside the grid box. Right-click and drag on the image to draw a grid.">
         <span class="island-title">Grid Cells</span>
         <br><br>
         <div class="cells-row">
@@ -62,7 +84,7 @@
             <button id="gridDecBtnX" class="step-btn" type="button" aria-label="Decrease horizontal pixels">
               <i class="fa-solid fa-minus"></i>
             </button>
-            <input id="gridInputX" value="8" aria-label="Horizontal pixels">
+            <input id="gridInputX" value="8" type="number" min="0" step="1" aria-label="Horizontal pixels">
             <button id="gridIncBtnX" class="step-btn" type="button" aria-label="Increase horizontal pixels">
               <i class="fa-solid fa-plus"></i>
             </button>
@@ -74,7 +96,7 @@
             <button id="gridDecBtnY" class="step-btn" type="button" aria-label="Decrease vertical pixels">
               <i class="fa-solid fa-minus"></i>
             </button>
-            <input id="gridInputY" value="8" aria-label="Vertical pixels">
+            <input id="gridInputY" value="8" type="number" min="0" step="1" aria-label="Vertical pixels">
             <button id="gridIncBtnY" class="step-btn" type="button" aria-label="Increase vertical pixels">
               <i class="fa-solid fa-plus"></i>
             </button>
@@ -89,7 +111,7 @@
           <input type="text" id="gridColorInput" class="coloris" value="#78d2ff" aria-label="Grid color">
         </div>
       </div>
-      <div class="floating-control" id="gridTransformControl" title="Nudge individual grid edges. Each button moves an edge by the nudge amount; the opposite edge stays fixed.">
+      <div class="floating-control hidden" id="gridTransformControl" title="Nudge individual grid edges. Each button moves an edge by the nudge amount; the opposite edge stays fixed.">
         <span class="island-title">Grid Transform</span>
         <br><br>
         <div class="transform-grid">

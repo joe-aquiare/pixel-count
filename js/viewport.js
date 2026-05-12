@@ -32,6 +32,7 @@ export function createViewport(canvas, {
   onGridChange = () => {},
   onGridVisibilityChange = () => {},
   onCursorMove = () => {},
+  onCropChange = () => {},
 } = {}) {
   const ctx = canvas.getContext('2d');
 
@@ -498,6 +499,19 @@ export function createViewport(canvas, {
 
   const fireGridChange = () => onGridChange(getResolutionEstimate());
 
+  const getCropAmounts = () => {
+    if (!image || !cropRect) return null;
+    normalizeRect(cropRect);
+    return {
+      top: cropRect.y1,
+      bottom: image.height - cropRect.y2,
+      left: cropRect.x1,
+      right: image.width - cropRect.x2,
+    };
+  };
+
+  const fireCropChange = () => onCropChange(getCropAmounts());
+
   const getPixelPosition = (imageX, imageY) => {
     if (!gridRect || !image) return { x: null, y: null };
     const bx1 = Math.min(gridRect.x1, gridRect.x2);
@@ -565,6 +579,7 @@ export function createViewport(canvas, {
     centerImage();
     updateCursor();
     render();
+    fireCropChange();
     fireGridChange();
   };
 
@@ -604,6 +619,35 @@ export function createViewport(canvas, {
     gridCellsY = Math.max(1, Math.floor(n) || 1);
     invalidateMosaic();
     render();
+    fireGridChange();
+  };
+
+  const setCropAmount = (side, value) => {
+    if (!image || !cropRect) return;
+    normalizeRect(cropRect);
+    const n = Math.max(0, Number(value));
+    if (!Number.isFinite(n)) return;
+
+    switch (side) {
+      case 'top':
+        cropRect.y1 = Math.min(n, cropRect.y2 - MIN_CROP_SIZE);
+        break;
+      case 'bottom':
+        cropRect.y2 = Math.max(image.height - n, cropRect.y1 + MIN_CROP_SIZE);
+        break;
+      case 'left':
+        cropRect.x1 = Math.min(n, cropRect.x2 - MIN_CROP_SIZE);
+        break;
+      case 'right':
+        cropRect.x2 = Math.max(image.width - n, cropRect.x1 + MIN_CROP_SIZE);
+        break;
+      default:
+        return;
+    }
+
+    normalizeRect(cropRect);
+    render();
+    fireCropChange();
     fireGridChange();
   };
 
@@ -848,6 +892,7 @@ export function createViewport(canvas, {
       const c = getCanvasCoords(e);
       applyCropDrag(cropDragMode, screenToImage(c.x, c.y));
       render();
+      fireCropChange();
       fireGridChange();
       return;
     }
@@ -892,6 +937,7 @@ export function createViewport(canvas, {
       cropDragMode = null;
       updateCursor();
       render();
+      fireCropChange();
       fireGridChange();
     }
     if (gridDragMode) {
@@ -959,6 +1005,8 @@ export function createViewport(canvas, {
     resetView,
     setGridCellsX,
     setGridCellsY,
+    setCropAmount,
+    getCropAmounts,
     getResolutionEstimate,
     setMosaicEnabled,
     setGridVisible,
