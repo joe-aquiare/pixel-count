@@ -52,6 +52,10 @@ export function createViewport(canvas, {
   let gridRect = null;
   let gridDragMode = null;
   let hoveredHandle = null;
+  let hoveredGridBody = false;
+  let gridMoveStartX = 0;
+  let gridMoveStartY = 0;
+  let gridMoveStartRect = null;
   let gridCellsX = 8;
   let gridCellsY = 8;
   let gridVisible = true;
@@ -146,6 +150,13 @@ export function createViewport(canvas, {
     return hitTestRect(gridRect, sx, sy);
   };
 
+  const isPointInGridBody = (sx, sy) => {
+    if (!gridRect || !gridVisible) return false;
+    const a = imageToScreen(Math.min(gridRect.x1, gridRect.x2), Math.min(gridRect.y1, gridRect.y2));
+    const b = imageToScreen(Math.max(gridRect.x1, gridRect.x2), Math.max(gridRect.y1, gridRect.y2));
+    return sx >= a.x && sx <= b.x && sy >= a.y && sy <= b.y;
+  };
+
   const getCropHandleAt = (sx, sy) => {
     if (!cropRect) return null;
     return hitTestRect(cropRect, sx, sy);
@@ -172,6 +183,16 @@ export function createViewport(canvas, {
       case 'r':
         gridRect.x2 = imgPt.x; break;
     }
+  };
+
+  const applyGridMove = (imgPt) => {
+    if (!gridRect || !gridMoveStartRect) return;
+    const dx = imgPt.x - gridMoveStartX;
+    const dy = imgPt.y - gridMoveStartY;
+    gridRect.x1 = gridMoveStartRect.x1 + dx;
+    gridRect.x2 = gridMoveStartRect.x2 + dx;
+    gridRect.y1 = gridMoveStartRect.y1 + dy;
+    gridRect.y2 = gridMoveStartRect.y2 + dy;
   };
 
   const applyCropDrag = (mode, imgPt) => {
@@ -219,12 +240,16 @@ export function createViewport(canvas, {
       canvas.style.cursor = 'grab';
     } else if (cropDragMode) {
       canvas.style.cursor = CURSOR_FOR_HANDLE[cropDragMode] || '';
+    } else if (gridDragMode === 'move') {
+      canvas.style.cursor = 'move';
     } else if (gridDragMode && gridDragMode !== 'create') {
       canvas.style.cursor = CURSOR_FOR_HANDLE[gridDragMode] || '';
     } else if (hoveredCropHandle) {
       canvas.style.cursor = CURSOR_FOR_HANDLE[hoveredCropHandle];
     } else if (hoveredHandle) {
       canvas.style.cursor = CURSOR_FOR_HANDLE[hoveredHandle];
+    } else if (hoveredGridBody) {
+      canvas.style.cursor = 'move';
     } else {
       canvas.style.cursor = '';
     }
@@ -514,6 +539,8 @@ export function createViewport(canvas, {
     gridRect = null;
     gridDragMode = null;
     hoveredHandle = null;
+    hoveredGridBody = false;
+    gridMoveStartRect = null;
     cropRect = { x1: 0, y1: 0, x2: img.width, y2: img.height };
     cropDragMode = null;
     hoveredCropHandle = null;
@@ -614,7 +641,10 @@ export function createViewport(canvas, {
 
   const setGridVisible = (visible) => {
     gridVisible = !!visible;
-    if (!gridVisible) hoveredHandle = null;
+    if (!gridVisible) {
+      hoveredHandle = null;
+      hoveredGridBody = false;
+    }
     updateCursor();
     render();
   };
@@ -647,6 +677,8 @@ export function createViewport(canvas, {
     gridRect = null;
     gridDragMode = null;
     hoveredHandle = null;
+    hoveredGridBody = false;
+    gridMoveStartRect = null;
     mosaicEnabled = false;
     invalidateMosaic();
     updateCursor();
@@ -778,11 +810,23 @@ export function createViewport(canvas, {
         gridDragMode = handle;
         updateCursor();
         e.preventDefault();
+        return;
+      }
+      if (isPointInGridBody(c.x, c.y)) {
+        normalizeRect(gridRect);
+        const start = screenToImage(c.x, c.y);
+        gridMoveStartX = start.x;
+        gridMoveStartY = start.y;
+        gridMoveStartRect = { ...gridRect };
+        gridDragMode = 'move';
+        updateCursor();
+        e.preventDefault();
       }
     } else if (e.button === 2) {
       const start = screenToImage(c.x, c.y);
       gridRect = { x1: start.x, y1: start.y, x2: start.x, y2: start.y };
       gridDragMode = 'create';
+      hoveredGridBody = false;
       if (!gridVisible) {
         gridVisible = true;
         onGridVisibilityChange(true);
@@ -809,7 +853,11 @@ export function createViewport(canvas, {
     }
     if (gridDragMode) {
       const c = getCanvasCoords(e);
-      applyDragToRect(gridDragMode, screenToImage(c.x, c.y));
+      if (gridDragMode === 'move') {
+        applyGridMove(screenToImage(c.x, c.y));
+      } else {
+        applyDragToRect(gridDragMode, screenToImage(c.x, c.y));
+      }
       invalidateMosaic();
       render();
       fireGridChange();
@@ -819,14 +867,19 @@ export function createViewport(canvas, {
     const c = getCanvasCoords(e);
     const prevCrop = hoveredCropHandle;
     const prevGrid = hoveredHandle;
+    const prevGridBody = hoveredGridBody;
     if (spaceHeld) {
       hoveredCropHandle = null;
       hoveredHandle = null;
+      hoveredGridBody = false;
     } else {
       hoveredCropHandle = getCropHandleAt(c.x, c.y);
       hoveredHandle = hoveredCropHandle ? null : getHandleAt(c.x, c.y);
+      hoveredGridBody = !hoveredCropHandle && !hoveredHandle && isPointInGridBody(c.x, c.y);
     }
-    if (prevCrop !== hoveredCropHandle || prevGrid !== hoveredHandle) updateCursor();
+    if (prevCrop !== hoveredCropHandle || prevGrid !== hoveredHandle || prevGridBody !== hoveredGridBody) {
+      updateCursor();
+    }
   });
 
   window.addEventListener('mouseup', (e) => {
@@ -853,6 +906,7 @@ export function createViewport(canvas, {
         }
         if (!gridRect) mosaicEnabled = false;
         gridDragMode = null;
+        gridMoveStartRect = null;
         invalidateMosaic();
         updateCursor();
         render();
@@ -865,6 +919,7 @@ export function createViewport(canvas, {
     if (e.code === 'Space' && !spaceHeld) {
       spaceHeld = true;
       hoveredHandle = null;
+      hoveredGridBody = false;
       hoveredCropHandle = null;
       updateCursor();
       e.preventDefault();
@@ -885,8 +940,10 @@ export function createViewport(canvas, {
     spaceHeld = false;
     panning = false;
     gridDragMode = null;
+    gridMoveStartRect = null;
     cropDragMode = null;
     hoveredHandle = null;
+    hoveredGridBody = false;
     hoveredCropHandle = null;
     updateCursor();
   });
