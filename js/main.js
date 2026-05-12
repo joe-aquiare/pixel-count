@@ -197,6 +197,26 @@ document.addEventListener('keydown', (e) => {
       clickIfActive(deleteGridBtn);
       e.preventDefault();
       break;
+    case 'a':
+    case 'A':
+      clickIfActive(gridDecBtnX);
+      e.preventDefault();
+      break;
+    case 'd':
+    case 'D':
+      clickIfActive(gridIncBtnX);
+      e.preventDefault();
+      break;
+    case 'w':
+    case 'W':
+      clickIfActive(gridIncBtnY);
+      e.preventDefault();
+      break;
+    case 's':
+    case 'S':
+      clickIfActive(gridDecBtnY);
+      e.preventDefault();
+      break;
     case 'ArrowLeft':
       viewport.translateGrid(-getNudge(), 0);
       e.preventDefault();
