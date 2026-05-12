@@ -73,6 +73,16 @@ export function createViewport(canvas, {
     };
   };
 
+  // Initialize transform-box border and background colors with default grid color
+  const initializeTransformBoxColor = () => {
+    const transformBox = document.querySelector('.transform-box');
+    if (transformBox) {
+      transformBox.style.borderColor = `rgba(${gridColor.r}, ${gridColor.g}, ${gridColor.b}, 0.85)`;
+      transformBox.style.backgroundColor = `rgba(${gridColor.r}, ${gridColor.g}, ${gridColor.b}, 0.1)`;
+    }
+  };
+  initializeTransformBoxColor();
+
   // Crop rect: defines the region of the image that counts as "active".
   // Initialized to the full image on load; clamped to image bounds.
   let cropRect = null;
@@ -616,6 +626,12 @@ export function createViewport(canvas, {
     const rgb = parseHexColor(color);
     if (!rgb) return;
     gridColor = rgb;
+    // Update the transform-box border and background colors
+    const transformBox = document.querySelector('.transform-box');
+    if (transformBox) {
+      transformBox.style.borderColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.85)`;
+      transformBox.style.backgroundColor = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.1)`;
+    }
     render();
   };
 

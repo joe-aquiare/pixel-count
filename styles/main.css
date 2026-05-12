@@ -28,6 +28,7 @@ body {
   align-items: center;
   gap: 12px;
   padding: 0 12px;
+  z-index: 99;
 }
 
 .tool-btn {
@@ -186,6 +187,16 @@ body {
   top: 12px;
 }
 
+#floating-control-bg {
+    position: absolute;
+    height: 100vh;
+    overflow: hidden;
+    width: 408px;
+    top: -16px;
+    left: -16px;
+    backdrop-filter: blur(60px);
+}
+
 .floating-label {
   font-size: 0.85rem;
   color: #ddd;
@@ -269,6 +280,19 @@ body {
 
 .grid-controls input {
   text-align: center;
+  text-align: center;
+  background-color: #1e1e1e;
+  border: 1px solid #565656;
+  color: #eee;
+}
+
+.clr-field button {
+  border-radius: 5px;
+}
+
+.grid-controls button {
+  font-size: 14px;
+  height: 30px;
 }
 
 .step-btn {
@@ -419,6 +443,7 @@ kbd {
   gap: 14px;
   padding: 0 14px;
   font-size: 0.8rem;
+  z-index: 99;
 }
 
 .status-field {
