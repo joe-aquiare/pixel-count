@@ -2,6 +2,7 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  user-select: none;
 }
 
 html, body {
@@ -19,7 +20,7 @@ body {
 }
 
 .toolbar {
-  height: 120px;
+  height: 78px;
   flex-shrink: 0;
   background: #2a2a2a;
   border-bottom: 1px solid #444;
@@ -34,16 +35,26 @@ body {
   color: #eee;
   border: 1px solid #555;
   border-radius: 8px;
-  padding: 14px 18px;
+  width: 55px;
+  height: 55px;
+  padding: 0;
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
   cursor: pointer;
-  font: inherit;
-  font-size: 0.85rem;
-  min-width: 96px;
   transition: background 0.1s, border-color 0.1s;
+}
+
+.toolbar-separator {
+  width: 1px;
+  height: 40px;
+  background: #555;
+  flex-shrink: 0;
+  margin: 0 4px;
+}
+
+.tool-btn span {
+  display: none;
 }
 
 .tool-btn:hover:not(:disabled) {
@@ -61,8 +72,13 @@ body {
 }
 
 .tool-btn svg {
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
+}
+
+.tool-btn i {
+  font-size: 24px;
+  line-height: 1;
 }
 
 .toggle-btn.active:not(:disabled) {
@@ -75,18 +91,15 @@ body {
   background: #4569a0;
 }
 
-.toggle-btn .icon-hidden,
-.toggle-btn .label-hidden {
+.toggle-btn .icon-hidden {
   display: none;
 }
 
-.toggle-btn:not(.active) .icon-visible,
-.toggle-btn:not(.active) .label-visible {
+.toggle-btn:not(.active) .icon-visible {
   display: none;
 }
 
-.toggle-btn:not(.active) .icon-hidden,
-.toggle-btn:not(.active) .label-hidden {
+.toggle-btn:not(.active) .icon-hidden {
   display: inline-block;
 }
 
@@ -108,15 +121,53 @@ body {
   background: rgba(40, 40, 40, 0.92);
   border: 1px solid #4a4a4a;
   border-radius: 10px;
-  padding: 10px 14px;
+  padding: 10px 10px;
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(6px);
 }
 
 #gridCellsControl {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.cells-row {
+  display: flex;
   align-items: center;
   gap: 12px;
+  justify-content: space-between;
+}
+
+.cells-row .floating-label {
+  min-width: 70px;
+}
+
+.cells-row input[type="number"] {
+  width: 56px;
+}
+
+.cells-row input[type="range"] {
+  width: 136px;
+  accent-color: #88aaff;
+}
+
+.cells-row input.coloris {
+  width: 136px;
+  background: #1e1e1e;
+  color: #eee;
+  border: 1px solid #555;
+  border-radius: 6px;
+  padding: 4px 8px;
+  padding-left: 32px;
+  font: inherit;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.cells-row input.coloris:focus {
+  outline: none;
+  border-color: #88aaff;
 }
 
 #gridTransformControl {
@@ -130,7 +181,9 @@ body {
   font-size: 0.85rem;
   color: #ddd;
   font-weight: 500;
-  text-align: center;
+  position: absolute;
+  left: 15px;
+  top: 12px;
 }
 
 .floating-label {
@@ -214,6 +267,10 @@ body {
   align-items: stretch;
 }
 
+.grid-controls input {
+  text-align: center;
+}
+
 .step-btn {
   background: #333;
   color: #eee;
@@ -278,7 +335,7 @@ body {
   flex-direction: column;
   align-items: flex-end;
   gap: 2px;
-  padding: 14px 18px;
+  padding: 0 8px;
 }
 
 .tool-info-label {
@@ -288,21 +345,11 @@ body {
   color: #aaa;
 }
 
-.tool-info-label-sub {
-  margin-top: 8px;
-}
-
 .tool-info-value {
   font-size: 1.5rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   color: #eee;
-}
-
-.tool-info-value-sub {
-  font-size: 1.05rem;
-  font-weight: 500;
-  color: #bbb;
 }
 
 #app {
@@ -360,4 +407,43 @@ kbd {
   border-radius: 3px;
   padding: 1px 5px;
   font-size: 0.9em;
+}
+
+.statusbar {
+  height: 30px;
+  flex-shrink: 0;
+  background: #2a2a2a;
+  border-top: 1px solid #444;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 14px;
+  font-size: 0.8rem;
+}
+
+.status-field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.status-label {
+  color: #aaa;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.5px;
+}
+
+.status-value {
+  color: #eee;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  min-width: 12ch;
+}
+
+.statusbar-separator {
+  width: 1px;
+  height: 18px;
+  background: #555;
+  flex-shrink: 0;
 }

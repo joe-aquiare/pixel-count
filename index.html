@@ -3,135 +3,166 @@
 <head>
   <meta charset="UTF-8">
   <title>Pixelcount</title>
+  <link rel="icon" href="data:,">
+
   <link rel="stylesheet" href="styles/main.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link rel="stylesheet" href="coloris/coloris.css">
 </head>
 <body>
   <div class="toolbar">
-    <button class="tool-btn" id="uploadBtn" title="Upload a new image">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 7.5m0 0L7.5 12m4.5-4.5v13.5" />
-      </svg>
+    <button class="tool-btn" id="uploadBtn" title="Upload (U)">
+      <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
       <span>Upload</span>
     </button>
-    <button class="tool-btn" id="zoomInBtn" title="Zoom in (centered)">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM10.5 7.5v6m3-3h-6" />
-      </svg>
+    <button class="tool-btn" id="exportBtn" title="Export (E)">
+      <i class="fa-solid fa-download" aria-hidden="true"></i>
+      <span>Export</span>
+    </button>
+    <button class="tool-btn" id="zoomInBtn" title="Zoom In">
+      <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
       <span>Zoom In</span>
     </button>
-    <button class="tool-btn" id="zoomOutBtn" title="Zoom out (centered)">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607ZM13.5 10.5h-6" />
-      </svg>
+    <button class="tool-btn" id="zoomOutBtn" title="Zoom Out">
+      <i class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></i>
       <span>Zoom Out</span>
     </button>
-    <button class="tool-btn" id="resetZoomBtn" title="Reset zoom and recenter">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0 3.181 3.183a8.25 8.25 0 0 0 13.803-3.7M4.031 9.865a8.25 8.25 0 0 1 13.803-3.7l3.181 3.182m0-4.991v4.99" />
-      </svg>
+    <button class="tool-btn" id="resetZoomBtn" title="Reset Zoom (1)">
+      <i class="fa-solid fa-down-left-and-up-right-to-center" aria-hidden="true"></i>
       <span>Reset Zoom</span>
     </button>
-    <button class="tool-btn toggle-btn" id="mosaicBtn" title="Toggle mosaic filter (requires a grid)" aria-pressed="false">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 0 1 6 3.75h2.25A2.25 2.25 0 0 1 10.5 6v2.25a2.25 2.25 0 0 1-2.25 2.25H6a2.25 2.25 0 0 1-2.25-2.25V6ZM3.75 15.75A2.25 2.25 0 0 1 6 13.5h2.25a2.25 2.25 0 0 1 2.25 2.25V18a2.25 2.25 0 0 1-2.25 2.25H6A2.25 2.25 0 0 1 3.75 18v-2.25ZM13.5 6a2.25 2.25 0 0 1 2.25-2.25H18A2.25 2.25 0 0 1 20.25 6v2.25A2.25 2.25 0 0 1 18 10.5h-2.25a2.25 2.25 0 0 1-2.25-2.25V6ZM13.5 15.75a2.25 2.25 0 0 1 2.25-2.25H18a2.25 2.25 0 0 1 2.25 2.25V18A2.25 2.25 0 0 1 18 20.25h-2.25A2.25 2.25 0 0 1 13.5 18v-2.25Z" />
-      </svg>
+    <div class="toolbar-separator" aria-hidden="true"></div>
+    <button class="tool-btn toggle-btn" id="mosaicBtn" title="Toggle Mosaic Filter (M)" aria-pressed="false">
+      <i class="fa-solid fa-table-cells" aria-hidden="true"></i>
       <span>Mosaic</span>
     </button>
-    <button class="tool-btn toggle-btn active" id="gridVisBtn" title="Show or hide the grid" aria-pressed="true">
-      <svg class="icon-visible" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-      </svg>
-      <svg class="icon-hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
-      </svg>
+    <button class="tool-btn toggle-btn active" id="gridVisBtn" title="Toggle Grid (G)" aria-pressed="true">
+      <i class="fa-solid fa-eye icon-visible" aria-hidden="true"></i>
+      <i class="fa-solid fa-eye-slash icon-hidden" aria-hidden="true"></i>
       <span class="label-visible">Hide Grid</span>
       <span class="label-hidden">Show Grid</span>
     </button>
-    <div class="tool-info" title="Estimated source resolution based on the image size, grid box size, and grid cells. Predicted = closest common 4:3 / 5:4 / 16:9 / 16:10 / 32:9 resolution.">
+    <button class="tool-btn" id="deleteGridBtn" title="Delete Grid (X)">
+      <i class="fa-solid fa-trash" aria-hidden="true"></i>
+      <span>Delete Grid</span>
+    </button>
+    <div class="tool-info" title="Estimated source resolution from the image size, grid box size, and grid cells.">
       <span class="tool-info-label">Estimated Resolution</span>
       <span class="tool-info-value" id="resolutionValue">&mdash;</span>
-      <span class="tool-info-label tool-info-label-sub">Predicted</span>
-      <span class="tool-info-value tool-info-value-sub" id="predictedValue">&mdash;</span>
     </div>
   </div>
   <div id="app">
     <canvas id="canvas"></canvas>
     <div class="floating-stack hidden" id="floatingStack">
-      <div class="floating-control" id="gridCellsControl" title="Number of grid cells per side (right-click and drag on the image to draw a grid)">
-        <span class="floating-label">Grid Cells</span>
-        <div class="grid-controls">
-          <button id="gridDecBtn" class="step-btn" type="button" aria-label="Decrease grid cells">&minus;</button>
-          <input type="number" id="gridInput" min="1" step="1" value="8" aria-label="Grid cells per side">
-          <button id="gridIncBtn" class="step-btn" type="button" aria-label="Increase grid cells">+</button>
+      <div class="floating-control" id="gridCellsControl" title="Number of horizontal and vertical pixels inside the grid box. Right-click and drag on the image to draw a grid.">
+        <span class="island-title">Grid Cells</span>
+        <br><br>
+        <div class="cells-row">
+          <span class="floating-label">Horizontal Cells</span>
+          <div class="grid-controls">
+            <button id="gridDecBtnX" class="step-btn" type="button" aria-label="Decrease horizontal pixels">
+              <i class="fa-solid fa-minus"></i>
+            </button>
+            <input id="gridInputX" value="8" aria-label="Horizontal pixels">
+            <button id="gridIncBtnX" class="step-btn" type="button" aria-label="Increase horizontal pixels">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="cells-row">
+          <span class="floating-label">Vertical Cells</span>
+          <div class="grid-controls">
+            <button id="gridDecBtnY" class="step-btn" type="button" aria-label="Decrease vertical pixels">
+              <i class="fa-solid fa-minus"></i>
+            </button>
+            <input id="gridInputY" value="8" aria-label="Vertical pixels">
+            <button id="gridIncBtnY" class="step-btn" type="button" aria-label="Increase vertical pixels">
+              <i class="fa-solid fa-plus"></i>
+            </button>
+          </div>
+        </div>
+        <div class="cells-row">
+          <span class="floating-label">Cell Opacity</span>
+          <input type="range" id="gridOpacityInput" min="0" max="1" step="0.01" value="1" aria-label="Cell opacity">
+        </div>
+        <div class="cells-row">
+          <span class="floating-label">Grid Color</span>
+          <input type="text" id="gridColorInput" class="coloris" value="#78d2ff" aria-label="Grid color">
         </div>
       </div>
       <div class="floating-control" id="gridTransformControl" title="Nudge individual grid edges. Each button moves an edge by the nudge amount; the opposite edge stays fixed.">
         <span class="island-title">Grid Transform</span>
+        <br><br>
         <div class="transform-grid">
           <div class="transform-box" aria-hidden="true"></div>
           <button class="transform-btn" id="topOutBtn" type="button" title="Move top edge up" aria-label="Move top edge up">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
-            </svg>
+            <i class="fa-solid fa-angle-up"></i>
           </button>
           <button class="transform-btn" id="topInBtn" type="button" title="Move top edge down" aria-label="Move top edge down">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-            </svg>
+            <i class="fa-solid fa-angle-down"></i>
           </button>
           <button class="transform-btn" id="leftOutBtn" type="button" title="Move left edge left" aria-label="Move left edge left">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
+            <i class="fa-solid fa-angle-left"></i>
           </button>
           <button class="transform-btn" id="leftInBtn" type="button" title="Move left edge right" aria-label="Move left edge right">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-            </svg>
+            <i class="fa-solid fa-angle-right"></i>
           </button>
           <button class="transform-btn" id="rightInBtn" type="button" title="Move right edge left" aria-label="Move right edge left">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
-            </svg>
+            <i class="fa-solid fa-angle-left"></i>
           </button>
           <button class="transform-btn" id="rightOutBtn" type="button" title="Move right edge right" aria-label="Move right edge right">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
-            </svg>
+            <i class="fa-solid fa-angle-right"></i>
           </button>
           <button class="transform-btn" id="bottomInBtn" type="button" title="Move bottom edge up" aria-label="Move bottom edge up">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 15.75 7.5-7.5 7.5 7.5" />
-            </svg>
+            <i class="fa-solid fa-angle-up"></i>
           </button>
           <button class="transform-btn" id="bottomOutBtn" type="button" title="Move bottom edge down" aria-label="Move bottom edge down">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" aria-hidden="true">
-              <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-            </svg>
+            <i class="fa-solid fa-angle-down"></i>
           </button>
         </div>
+        <br>
         <div class="nudge-row">
-          <span class="floating-label">Nudge</span>
+          <span class="floating-label">Nudge Amount</span>
           <div class="grid-controls">
-            <button id="nudgeDecBtn" class="step-btn" type="button" aria-label="Decrease nudge amount">&minus;</button>
-            <input type="number" id="nudgeInput" min="0.01" step="0.01" value="1" aria-label="Nudge amount in image pixels">
-            <button id="nudgeIncBtn" class="step-btn" type="button" aria-label="Increase nudge amount">+</button>
+            <button id="nudgeDecBtn" class="step-btn" type="button" aria-label="Decrease nudge amount">
+              <i class="fa-solid fa-minus"></i>
+            </button>
+            <input id="nudgeInput" value=".05" aria-label="Nudge amount">
+            <button id="nudgeIncBtn" class="step-btn" type="button" aria-label="Increase nudge amount">
+              <i class="fa-solid fa-plus"></i>
+            </button>
           </div>
         </div>
       </div>
     </div>
     <div id="dropzone" class="dropzone">
       <p>
-        Drop an image here or
+        Drag & drop an image, or
         <label class="file-label">
-          click to choose
+          click here
           <input type="file" id="fileInput" accept="image/*" hidden>
         </label>
+        to choose an image file.
       </p>
-      <p class="hint">Hold <kbd>Space</kbd> and drag to pan. Scroll to zoom. Right-click and drag to draw a grid.</p>
     </div>
   </div>
+  <div class="statusbar">
+    <div class="status-field">
+      <span class="status-label">Source Resolution</span>
+      <span class="status-value" id="sourceResolution">&mdash;</span>
+    </div>
+    <div class="statusbar-separator" aria-hidden="true"></div>
+    <div class="status-field">
+      <span class="status-label">Cursor Position</span>
+      <span class="status-value" id="cursorPosition">&mdash;</span>
+    </div>
+    <div class="statusbar-separator" aria-hidden="true"></div>
+    <div class="status-field">
+      <span class="status-label">Pixel Position</span>
+      <span class="status-value" id="pixelPosition">&mdash;</span>
+    </div>
+  </div>
+  <script src="coloris/coloris.js"></script>
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

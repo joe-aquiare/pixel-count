@@ -1,8 +1,10 @@
 const MIN_SCALE = 0.2;
-const MAX_SCALE = 5.0;
+const MAX_SCALE = 10.0;
 const ZOOM_FACTOR = 1.25;
 const HANDLE_HIT_PX = 8;
 const HANDLE_DRAW_PX = 7;
+const OUTSIDE_CROP_ALPHA = 0.1;
+const MIN_CROP_SIZE = 1;
 
 const CURSOR_FOR_HANDLE = {
   tl: 'nwse-resize',
@@ -15,9 +17,21 @@ const CURSOR_FOR_HANDLE = {
   r: 'ew-resize',
 };
 
+const GRID_FILL_ALPHA = 0.12;
+const GRID_LINE_ALPHA = 0.6;
+const GRID_LINE_LIGHT_ALPHA = 0.22;
+const GRID_BORDER_ALPHA = 0.95;
+const GRID_HANDLE_ALPHA = 1;
+
+const CROP_BORDER = 'rgba(140, 230, 130, 0.9)';
+const CROP_HANDLE = 'rgba(140, 230, 130, 1)';
+
+const HANDLE_STROKE = '#1e1e1e';
+
 export function createViewport(canvas, {
   onGridChange = () => {},
   onGridVisibilityChange = () => {},
+  onCursorMove = () => {},
 } = {}) {
   const ctx = canvas.getContext('2d');
 
@@ -34,14 +48,36 @@ export function createViewport(canvas, {
   let offsetStartX = 0;
   let offsetStartY = 0;
 
-  // Grid coords are stored in image space so the box stays anchored to the
-  // image through subsequent pan and zoom. The rect is kept normalized
-  // (x1 <= x2, y1 <= y2) except transiently during a drag.
+  // Grid rect: user-drawn box, normalized between drags.
   let gridRect = null;
   let gridDragMode = null;
   let hoveredHandle = null;
-  let gridCells = 8;
+  let gridCellsX = 8;
+  let gridCellsY = 8;
   let gridVisible = true;
+  let gridColor = { r: 120, g: 210, b: 255 };
+  let gridOpacity = 1;
+
+  const gridRgba = (alpha) =>
+    `rgba(${gridColor.r},${gridColor.g},${gridColor.b},${alpha * gridOpacity})`;
+
+  const parseHexColor = (color) => {
+    if (typeof color !== 'string') return null;
+    let hex = color.trim().replace(/^#/, '');
+    if (hex.length === 3) hex = hex.split('').map((c) => c + c).join('');
+    if (!/^[0-9a-fA-F]{6}$/.test(hex)) return null;
+    return {
+      r: parseInt(hex.slice(0, 2), 16),
+      g: parseInt(hex.slice(2, 4), 16),
+      b: parseInt(hex.slice(4, 6), 16),
+    };
+  };
+
+  // Crop rect: defines the region of the image that counts as "active".
+  // Initialized to the full image on load; clamped to image bounds.
+  let cropRect = null;
+  let cropDragMode = null;
+  let hoveredCropHandle = null;
 
   let mosaicEnabled = false;
   let mosaicCanvas = null;
@@ -64,16 +100,16 @@ export function createViewport(canvas, {
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
   };
 
-  const normalizeGridRect = () => {
-    if (!gridRect) return;
-    if (gridRect.x1 > gridRect.x2) [gridRect.x1, gridRect.x2] = [gridRect.x2, gridRect.x1];
-    if (gridRect.y1 > gridRect.y2) [gridRect.y1, gridRect.y2] = [gridRect.y2, gridRect.y1];
+  const normalizeRect = (rect) => {
+    if (!rect) return;
+    if (rect.x1 > rect.x2) [rect.x1, rect.x2] = [rect.x2, rect.x1];
+    if (rect.y1 > rect.y2) [rect.y1, rect.y2] = [rect.y2, rect.y1];
   };
 
-  const getHandleAt = (sx, sy) => {
-    if (!gridRect || !gridVisible) return null;
-    const a = imageToScreen(Math.min(gridRect.x1, gridRect.x2), Math.min(gridRect.y1, gridRect.y2));
-    const b = imageToScreen(Math.max(gridRect.x1, gridRect.x2), Math.max(gridRect.y1, gridRect.y2));
+  const hitTestRect = (rect, sx, sy) => {
+    if (!rect) return null;
+    const a = imageToScreen(Math.min(rect.x1, rect.x2), Math.min(rect.y1, rect.y2));
+    const b = imageToScreen(Math.max(rect.x1, rect.x2), Math.max(rect.y1, rect.y2));
 
     const nearL = Math.abs(sx - a.x) <= HANDLE_HIT_PX;
     const nearR = Math.abs(sx - b.x) <= HANDLE_HIT_PX;
@@ -93,6 +129,16 @@ export function createViewport(canvas, {
     if (nearL) return 'l';
     if (nearR) return 'r';
     return null;
+  };
+
+  const getHandleAt = (sx, sy) => {
+    if (!gridRect || !gridVisible) return null;
+    return hitTestRect(gridRect, sx, sy);
+  };
+
+  const getCropHandleAt = (sx, sy) => {
+    if (!cropRect) return null;
+    return hitTestRect(cropRect, sx, sy);
   };
 
   const applyDragToRect = (mode, imgPt) => {
@@ -118,13 +164,55 @@ export function createViewport(canvas, {
     }
   };
 
+  const applyCropDrag = (mode, imgPt) => {
+    if (!cropRect || !image) return;
+    // Clamp the drag point to the image bounds — crop can't extend off-image.
+    const cx = Math.max(0, Math.min(image.width, imgPt.x));
+    const cy = Math.max(0, Math.min(image.height, imgPt.y));
+
+    switch (mode) {
+      case 'tl':
+        cropRect.x1 = Math.min(cx, cropRect.x2 - MIN_CROP_SIZE);
+        cropRect.y1 = Math.min(cy, cropRect.y2 - MIN_CROP_SIZE);
+        break;
+      case 'tr':
+        cropRect.x2 = Math.max(cx, cropRect.x1 + MIN_CROP_SIZE);
+        cropRect.y1 = Math.min(cy, cropRect.y2 - MIN_CROP_SIZE);
+        break;
+      case 'bl':
+        cropRect.x1 = Math.min(cx, cropRect.x2 - MIN_CROP_SIZE);
+        cropRect.y2 = Math.max(cy, cropRect.y1 + MIN_CROP_SIZE);
+        break;
+      case 'br':
+        cropRect.x2 = Math.max(cx, cropRect.x1 + MIN_CROP_SIZE);
+        cropRect.y2 = Math.max(cy, cropRect.y1 + MIN_CROP_SIZE);
+        break;
+      case 't':
+        cropRect.y1 = Math.min(cy, cropRect.y2 - MIN_CROP_SIZE);
+        break;
+      case 'b':
+        cropRect.y2 = Math.max(cy, cropRect.y1 + MIN_CROP_SIZE);
+        break;
+      case 'l':
+        cropRect.x1 = Math.min(cx, cropRect.x2 - MIN_CROP_SIZE);
+        break;
+      case 'r':
+        cropRect.x2 = Math.max(cx, cropRect.x1 + MIN_CROP_SIZE);
+        break;
+    }
+  };
+
   const updateCursor = () => {
     if (panning) {
       canvas.style.cursor = 'grabbing';
     } else if (spaceHeld && image) {
       canvas.style.cursor = 'grab';
+    } else if (cropDragMode) {
+      canvas.style.cursor = CURSOR_FOR_HANDLE[cropDragMode] || '';
     } else if (gridDragMode && gridDragMode !== 'create') {
       canvas.style.cursor = CURSOR_FOR_HANDLE[gridDragMode] || '';
+    } else if (hoveredCropHandle) {
+      canvas.style.cursor = CURSOR_FOR_HANDLE[hoveredCropHandle];
     } else if (hoveredHandle) {
       canvas.style.cursor = CURSOR_FOR_HANDLE[hoveredHandle];
     } else {
@@ -147,77 +235,98 @@ export function createViewport(canvas, {
     const h = b.y - a.y;
     if (w < 1 || h < 1) return;
 
-    const cellW = w / gridCells;
-    const cellH = h / gridCells;
+    const cellW = w / gridCellsX;
+    const cellH = h / gridCellsY;
 
-    // Light grid extending from the box edges to the image bounds. Skipped
-    // when cells are too small to read, to avoid a wall of lines.
-    if (image && cellW >= 3 && cellH >= 3) {
-      const imgA = imageToScreen(0, 0);
-      const imgB = imageToScreen(image.width, image.height);
-      const imgW = imgB.x - imgA.x;
-      const imgH = imgB.y - imgA.y;
+    // Light grid extending from the box edges to the crop bounds (not the
+    // full image). Skipped when cells are too small to read.
+    if (image && cropRect && cellW >= 3 && cellH >= 3) {
+      const cropA = imageToScreen(Math.min(cropRect.x1, cropRect.x2), Math.min(cropRect.y1, cropRect.y2));
+      const cropB = imageToScreen(Math.max(cropRect.x1, cropRect.x2), Math.max(cropRect.y1, cropRect.y2));
+      const cw = cropB.x - cropA.x;
+      const ch = cropB.y - cropA.y;
 
       ctx.save();
       ctx.beginPath();
-      ctx.rect(imgA.x, imgA.y, imgW, imgH);
+      ctx.rect(cropA.x, cropA.y, cw, ch);
       ctx.rect(a.x, a.y, w, h);
       ctx.clip('evenodd');
 
       ctx.lineWidth = 1;
-      ctx.strokeStyle = 'rgba(120, 210, 255, 0.22)';
+      ctx.strokeStyle = gridRgba(GRID_LINE_LIGHT_ALPHA);
       ctx.beginPath();
 
-      const iMin = Math.ceil((imgA.x - a.x) / cellW);
-      const iMax = Math.floor((imgB.x - a.x) / cellW);
+      const iMin = Math.ceil((cropA.x - a.x) / cellW);
+      const iMax = Math.floor((cropB.x - a.x) / cellW);
       for (let i = iMin; i <= iMax; i++) {
         const x = a.x + i * cellW;
-        ctx.moveTo(x, imgA.y);
-        ctx.lineTo(x, imgB.y);
+        ctx.moveTo(x, cropA.y);
+        ctx.lineTo(x, cropB.y);
       }
 
-      const jMin = Math.ceil((imgA.y - a.y) / cellH);
-      const jMax = Math.floor((imgB.y - a.y) / cellH);
+      const jMin = Math.ceil((cropA.y - a.y) / cellH);
+      const jMax = Math.floor((cropB.y - a.y) / cellH);
       for (let j = jMin; j <= jMax; j++) {
         const y = a.y + j * cellH;
-        ctx.moveTo(imgA.x, y);
-        ctx.lineTo(imgB.x, y);
+        ctx.moveTo(cropA.x, y);
+        ctx.lineTo(cropB.x, y);
       }
 
       ctx.stroke();
       ctx.restore();
     }
 
-    ctx.fillStyle = 'rgba(80, 180, 255, 0.12)';
+    ctx.fillStyle = gridRgba(GRID_FILL_ALPHA);
     ctx.fillRect(a.x, a.y, w, h);
 
     ctx.lineWidth = 1;
-    ctx.strokeStyle = 'rgba(120, 210, 255, 0.6)';
+    ctx.strokeStyle = gridRgba(GRID_LINE_ALPHA);
     ctx.beginPath();
-    for (let i = 1; i < gridCells; i++) {
+    for (let i = 1; i < gridCellsX; i++) {
       const tx = a.x + cellW * i;
-      const ty = a.y + cellH * i;
       ctx.moveTo(tx, a.y);
       ctx.lineTo(tx, a.y + h);
+    }
+    for (let j = 1; j < gridCellsY; j++) {
+      const ty = a.y + cellH * j;
       ctx.moveTo(a.x, ty);
       ctx.lineTo(a.x + w, ty);
     }
     ctx.stroke();
 
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(120, 210, 255, 0.95)';
+    ctx.strokeStyle = gridRgba(GRID_BORDER_ALPHA);
     ctx.strokeRect(a.x, a.y, w, h);
 
+    drawHandles(a, b, gridRgba(GRID_HANDLE_ALPHA));
+  };
+
+  const drawCrop = () => {
+    if (!image || !cropRect) return;
+    const a = imageToScreen(Math.min(cropRect.x1, cropRect.x2), Math.min(cropRect.y1, cropRect.y2));
+    const b = imageToScreen(Math.max(cropRect.x1, cropRect.x2), Math.max(cropRect.y1, cropRect.y2));
+    const w = b.x - a.x;
+    const h = b.y - a.y;
+    if (w < 1 || h < 1) return;
+
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = CROP_BORDER;
+    ctx.strokeRect(a.x, a.y, w, h);
+
+    drawHandles(a, b, CROP_HANDLE);
+  };
+
+  const drawHandles = (a, b, fill) => {
     const half = HANDLE_DRAW_PX / 2;
-    const handles = [
+    const positions = [
       [a.x, a.y], [b.x, a.y], [a.x, b.y], [b.x, b.y],
       [(a.x + b.x) / 2, a.y], [(a.x + b.x) / 2, b.y],
       [a.x, (a.y + b.y) / 2], [b.x, (a.y + b.y) / 2],
     ];
-    ctx.fillStyle = 'rgba(120, 210, 255, 1)';
-    ctx.strokeStyle = '#1e1e1e';
+    ctx.fillStyle = fill;
+    ctx.strokeStyle = HANDLE_STROKE;
     ctx.lineWidth = 1;
-    for (const [px, py] of handles) {
+    for (const [px, py] of positions) {
       ctx.fillRect(px - half, py - half, HANDLE_DRAW_PX, HANDLE_DRAW_PX);
       ctx.strokeRect(px - half, py - half, HANDLE_DRAW_PX, HANDLE_DRAW_PX);
     }
@@ -235,53 +344,58 @@ export function createViewport(canvas, {
       mosaicCanvas.height = h;
     }
     const dctx = mosaicCanvas.getContext('2d');
-    dctx.clearRect(0, 0, w, h);
 
     const bx1 = Math.min(gridRect.x1, gridRect.x2);
     const by1 = Math.min(gridRect.y1, gridRect.y2);
     const bx2 = Math.max(gridRect.x1, gridRect.x2);
     const by2 = Math.max(gridRect.y1, gridRect.y2);
-    const cellW = (bx2 - bx1) / gridCells;
-    const cellH = (by2 - by1) / gridCells;
+    const cellW = (bx2 - bx1) / gridCellsX;
+    const cellH = (by2 - by1) / gridCellsY;
 
-    // If cells would be sub-pixel, mosaic is meaningless — fall back to original.
     if (cellW < 0.5 || cellH < 0.5) {
+      dctx.clearRect(0, 0, w, h);
       dctx.drawImage(image, 0, 0);
       mosaicValid = true;
       return;
     }
 
-    const iMin = Math.floor(-bx1 / cellW);
-    const iMax = Math.floor((w - bx1) / cellW);
-    const jMin = Math.floor(-by1 / cellH);
-    const jMax = Math.floor((h - by1) / cellH);
-    const data = imageData.data;
+    // Per-output-pixel mosaic. Each output pixel is assigned to the cell that
+    // contains its center (half-open interval [cellLeft, cellRight)), then
+    // copies the byte exactly from the cell-center sample of the source. No
+    // fillRect, no sub-pixel anti-aliasing, no boundary blending.
+    const out = dctx.createImageData(w, h);
+    const src32 = new Uint32Array(imageData.data.buffer);
+    const dst32 = new Uint32Array(out.data.buffer);
 
-    for (let j = jMin; j <= jMax; j++) {
-      const top = by1 + j * cellH;
-      const bottom = top + cellH;
-      const sy = Math.max(0, Math.min(h - 1, Math.floor(top + cellH / 2)));
-      const yClip = Math.max(0, top);
-      const bottomClip = Math.min(h, bottom);
-      if (bottomClip <= yClip) continue;
+    const sampleY = new Int32Array(h);
+    for (let y = 0; y < h; y++) {
+      const cellJ = Math.floor((y + 0.5 - by1) / cellH);
+      const cellCenterY = by1 + (cellJ + 0.5) * cellH;
+      let sy = Math.floor(cellCenterY);
+      if (sy < 0) sy = 0;
+      else if (sy >= h) sy = h - 1;
+      sampleY[y] = sy;
+    }
 
-      for (let i = iMin; i <= iMax; i++) {
-        const left = bx1 + i * cellW;
-        const right = left + cellW;
-        const sx = Math.max(0, Math.min(w - 1, Math.floor(left + cellW / 2)));
-        const xClip = Math.max(0, left);
-        const rightClip = Math.min(w, right);
-        if (rightClip <= xClip) continue;
+    const sampleX = new Int32Array(w);
+    for (let x = 0; x < w; x++) {
+      const cellI = Math.floor((x + 0.5 - bx1) / cellW);
+      const cellCenterX = bx1 + (cellI + 0.5) * cellW;
+      let sx = Math.floor(cellCenterX);
+      if (sx < 0) sx = 0;
+      else if (sx >= w) sx = w - 1;
+      sampleX[x] = sx;
+    }
 
-        const idx = (sy * w + sx) * 4;
-        const r = data[idx];
-        const g = data[idx + 1];
-        const b = data[idx + 2];
-        const a = data[idx + 3] / 255;
-        dctx.fillStyle = `rgba(${r},${g},${b},${a})`;
-        dctx.fillRect(xClip, yClip, rightClip - xClip, bottomClip - yClip);
+    for (let y = 0; y < h; y++) {
+      const srcRowStart = sampleY[y] * w;
+      const dstRowStart = y * w;
+      for (let x = 0; x < w; x++) {
+        dst32[dstRowStart + x] = src32[srcRowStart + sampleX[x]];
       }
     }
+
+    dctx.putImageData(out, 0, 0);
     mosaicValid = true;
   };
 
@@ -289,19 +403,43 @@ export function createViewport(canvas, {
     mosaicValid = false;
   };
 
+  const drawSource = (alpha) => {
+    const source = (mosaicEnabled && mosaicCanvas && gridRect) ? mosaicCanvas : image;
+    if (alpha !== 1) ctx.globalAlpha = alpha;
+    ctx.drawImage(source, offsetX, offsetY, image.width * scale, image.height * scale);
+    if (alpha !== 1) ctx.globalAlpha = 1;
+  };
+
   const render = () => {
     const r = dpr();
     ctx.setTransform(r, 0, 0, r, 0, 0);
     ctx.clearRect(0, 0, canvas.clientWidth, canvas.clientHeight);
-    if (mosaicEnabled && image && gridRect) {
-      if (!mosaicValid) computeMosaic();
-      if (mosaicCanvas) {
-        ctx.drawImage(mosaicCanvas, offsetX, offsetY, image.width * scale, image.height * scale);
+    ctx.imageSmoothingEnabled = false;
+
+    if (image) {
+      if (mosaicEnabled && gridRect && !mosaicValid) computeMosaic();
+
+      if (!cropRect) {
+        drawSource(1);
+      } else {
+        drawSource(OUTSIDE_CROP_ALPHA);
+        const ca = imageToScreen(Math.min(cropRect.x1, cropRect.x2), Math.min(cropRect.y1, cropRect.y2));
+        const cb = imageToScreen(Math.max(cropRect.x1, cropRect.x2), Math.max(cropRect.y1, cropRect.y2));
+        const cw = cb.x - ca.x;
+        const ch = cb.y - ca.y;
+        if (cw > 0 && ch > 0) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.rect(ca.x, ca.y, cw, ch);
+          ctx.clip();
+          drawSource(1);
+          ctx.restore();
+        }
       }
-    } else if (image) {
-      ctx.drawImage(image, offsetX, offsetY, image.width * scale, image.height * scale);
     }
+
     drawGrid();
+    drawCrop();
   };
 
   const centerImage = () => {
@@ -311,17 +449,54 @@ export function createViewport(canvas, {
   };
 
   const getResolutionEstimate = () => {
-    if (!image || !gridRect) return null;
+    if (!image || !gridRect || !cropRect) return null;
     const gw = Math.abs(gridRect.x2 - gridRect.x1);
     const gh = Math.abs(gridRect.y2 - gridRect.y1);
     if (gw < 1 || gh < 1) return null;
+    const cw = Math.abs(cropRect.x2 - cropRect.x1);
+    const ch = Math.abs(cropRect.y2 - cropRect.y1);
     return {
-      width: Math.round((image.width * gridCells) / gw),
-      height: Math.round((image.height * gridCells) / gh),
+      width: Math.round((cw * gridCellsX) / gw),
+      height: Math.round((ch * gridCellsY) / gh),
     };
   };
 
   const fireGridChange = () => onGridChange(getResolutionEstimate());
+
+  const getPixelPosition = (imageX, imageY) => {
+    if (!gridRect || !image) return { x: null, y: null };
+    const bx1 = Math.min(gridRect.x1, gridRect.x2);
+    const by1 = Math.min(gridRect.y1, gridRect.y2);
+    const bx2 = Math.max(gridRect.x1, gridRect.x2);
+    const by2 = Math.max(gridRect.y1, gridRect.y2);
+    const cellW = (bx2 - bx1) / gridCellsX;
+    const cellH = (by2 - by1) / gridCellsY;
+    if (cellW < 0.0001 || cellH < 0.0001) return { x: null, y: null };
+    // Pixel (0,0) is anchored to the image's top-left, using the cell size
+    // derived from the user's grid box. Clamp to the grid's resolution within
+    // the image so the value never exceeds the addressable cell range.
+    const maxX = Math.max(0, Math.round(image.width / cellW) - 1);
+    const maxY = Math.max(0, Math.round(image.height / cellH) - 1);
+    return {
+      x: Math.max(0, Math.min(maxX, Math.floor(imageX / cellW))),
+      y: Math.max(0, Math.min(maxY, Math.floor(imageY / cellH))),
+    };
+  };
+
+  canvas.addEventListener('mousemove', (e) => {
+    if (!image) return;
+    const c = getCanvasCoords(e);
+    const imgPos = screenToImage(c.x, c.y);
+    const clampedX = Math.max(0, Math.min(image.width - 1, Math.floor(imgPos.x)));
+    const clampedY = Math.max(0, Math.min(image.height - 1, Math.floor(imgPos.y)));
+    const pixPos = getPixelPosition(clampedX, clampedY);
+    onCursorMove({
+      imageX: clampedX,
+      imageY: clampedY,
+      pixelX: pixPos.x,
+      pixelY: pixPos.y,
+    });
+  });
 
   const setImage = (img) => {
     image = img;
@@ -329,6 +504,9 @@ export function createViewport(canvas, {
     gridRect = null;
     gridDragMode = null;
     hoveredHandle = null;
+    cropRect = { x1: 0, y1: 0, x2: img.width, y2: img.height };
+    cropDragMode = null;
+    hoveredCropHandle = null;
     mosaicEnabled = false;
     mosaicValid = false;
     if (!gridVisible) {
@@ -378,8 +556,15 @@ export function createViewport(canvas, {
     render();
   };
 
-  const setGridCells = (n) => {
-    gridCells = Math.max(1, Math.floor(n) || 1);
+  const setGridCellsX = (n) => {
+    gridCellsX = Math.max(1, Math.floor(n) || 1);
+    invalidateMosaic();
+    render();
+    fireGridChange();
+  };
+
+  const setGridCellsY = (n) => {
+    gridCellsY = Math.max(1, Math.floor(n) || 1);
     invalidateMosaic();
     render();
     fireGridChange();
@@ -387,7 +572,7 @@ export function createViewport(canvas, {
 
   const nudgeGridEdge = (edge, amount) => {
     if (!gridRect) return;
-    normalizeGridRect();
+    normalizeRect(gridRect);
     const MIN_SIZE = 1;
     switch (edge) {
       case 'leftOut':   gridRect.x1 -= amount; break;
@@ -427,6 +612,106 @@ export function createViewport(canvas, {
   const getMosaicEnabled = () => mosaicEnabled;
   const getGridVisible = () => gridVisible;
 
+  const setGridColor = (color) => {
+    const rgb = parseHexColor(color);
+    if (!rgb) return;
+    gridColor = rgb;
+    render();
+  };
+
+  const setGridOpacity = (opacity) => {
+    const n = Number(opacity);
+    if (!Number.isFinite(n)) return;
+    gridOpacity = Math.max(0, Math.min(1, n));
+    render();
+  };
+
+  const clearGrid = () => {
+    if (!gridRect) return;
+    gridRect = null;
+    gridDragMode = null;
+    hoveredHandle = null;
+    mosaicEnabled = false;
+    invalidateMosaic();
+    updateCursor();
+    render();
+    fireGridChange();
+  };
+
+  const translateGrid = (dx, dy) => {
+    if (!gridRect) return;
+    normalizeRect(gridRect);
+    gridRect.x1 += dx;
+    gridRect.x2 += dx;
+    gridRect.y1 += dy;
+    gridRect.y2 += dy;
+    invalidateMosaic();
+    render();
+    fireGridChange();
+  };
+
+  const exportNativeImage = () => {
+    if (!image || !imageData || !gridRect || !cropRect) return null;
+
+    const w = image.width;
+    const h = image.height;
+
+    const bx1 = Math.min(gridRect.x1, gridRect.x2);
+    const by1 = Math.min(gridRect.y1, gridRect.y2);
+    const bx2 = Math.max(gridRect.x1, gridRect.x2);
+    const by2 = Math.max(gridRect.y1, gridRect.y2);
+    const cellW = (bx2 - bx1) / gridCellsX;
+    const cellH = (by2 - by1) / gridCellsY;
+
+    const cx1 = Math.min(cropRect.x1, cropRect.x2);
+    const cy1 = Math.min(cropRect.y1, cropRect.y2);
+    const cx2 = Math.max(cropRect.x1, cropRect.x2);
+    const cy2 = Math.max(cropRect.y1, cropRect.y2);
+    const cropW = cx2 - cx1;
+    const cropH = cy2 - cy1;
+
+    if (cellW < 0.5 || cellH < 0.5 || cropW < 1 || cropH < 1) return null;
+
+    const nativeW = Math.max(1, Math.round(cropW / cellW));
+    const nativeH = Math.max(1, Math.round(cropH / cellH));
+
+    // Pick the first grid-aligned cell whose center falls inside the crop,
+    // so the exported pixels match what the mosaic would draw at that spot.
+    const firstI = Math.ceil((cx1 - bx1) / cellW - 0.5);
+    const firstJ = Math.ceil((cy1 - by1) / cellH - 0.5);
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = nativeW;
+    outCanvas.height = nativeH;
+    const octx = outCanvas.getContext('2d');
+    const outData = octx.createImageData(nativeW, nativeH);
+
+    const src32 = new Uint32Array(imageData.data.buffer);
+    const dst32 = new Uint32Array(outData.data.buffer);
+
+    for (let py = 0; py < nativeH; py++) {
+      const cellJ = firstJ + py;
+      const cellCenterY = by1 + (cellJ + 0.5) * cellH;
+      let sy = Math.floor(cellCenterY);
+      if (sy < 0) sy = 0;
+      else if (sy >= h) sy = h - 1;
+      const srcRowStart = sy * w;
+      const dstRowStart = py * nativeW;
+
+      for (let px = 0; px < nativeW; px++) {
+        const cellI = firstI + px;
+        const cellCenterX = bx1 + (cellI + 0.5) * cellW;
+        let sx = Math.floor(cellCenterX);
+        if (sx < 0) sx = 0;
+        else if (sx >= w) sx = w - 1;
+        dst32[dstRowStart + px] = src32[srcRowStart + sx];
+      }
+    }
+
+    octx.putImageData(outData, 0, 0);
+    return outCanvas;
+  };
+
   canvas.addEventListener('wheel', (e) => {
     if (!image) return;
     e.preventDefault();
@@ -439,7 +724,19 @@ export function createViewport(canvas, {
 
   canvas.addEventListener('mousedown', (e) => {
     if (!image) return;
+    if (panning) return;
     const c = getCanvasCoords(e);
+
+    if (e.button === 1) {
+      panning = true;
+      panStartX = e.clientX;
+      panStartY = e.clientY;
+      offsetStartX = offsetX;
+      offsetStartY = offsetY;
+      updateCursor();
+      e.preventDefault();
+      return;
+    }
 
     if (e.button === 0) {
       if (spaceHeld) {
@@ -448,6 +745,14 @@ export function createViewport(canvas, {
         panStartY = e.clientY;
         offsetStartX = offsetX;
         offsetStartY = offsetY;
+        updateCursor();
+        e.preventDefault();
+        return;
+      }
+      // Crop handles take priority over grid handles (crop is drawn on top).
+      const cropHandle = getCropHandleAt(c.x, c.y);
+      if (cropHandle) {
+        cropDragMode = cropHandle;
         updateCursor();
         e.preventDefault();
         return;
@@ -479,6 +784,13 @@ export function createViewport(canvas, {
       render();
       return;
     }
+    if (cropDragMode) {
+      const c = getCanvasCoords(e);
+      applyCropDrag(cropDragMode, screenToImage(c.x, c.y));
+      render();
+      fireGridChange();
+      return;
+    }
     if (gridDragMode) {
       const c = getCanvasCoords(e);
       applyDragToRect(gridDragMode, screenToImage(c.x, c.y));
@@ -489,22 +801,35 @@ export function createViewport(canvas, {
     }
     if (!image) return;
     const c = getCanvasCoords(e);
-    const prev = hoveredHandle;
-    hoveredHandle = spaceHeld ? null : getHandleAt(c.x, c.y);
-    if (prev !== hoveredHandle) updateCursor();
+    const prevCrop = hoveredCropHandle;
+    const prevGrid = hoveredHandle;
+    if (spaceHeld) {
+      hoveredCropHandle = null;
+      hoveredHandle = null;
+    } else {
+      hoveredCropHandle = getCropHandleAt(c.x, c.y);
+      hoveredHandle = hoveredCropHandle ? null : getHandleAt(c.x, c.y);
+    }
+    if (prevCrop !== hoveredCropHandle || prevGrid !== hoveredHandle) updateCursor();
   });
 
   window.addEventListener('mouseup', (e) => {
-    if (panning && e.button === 0) {
+    if (panning && (e.button === 0 || e.button === 1)) {
       panning = false;
       updateCursor();
+    }
+    if (cropDragMode && e.button === 0) {
+      normalizeRect(cropRect);
+      cropDragMode = null;
+      updateCursor();
+      render();
+      fireGridChange();
     }
     if (gridDragMode) {
       const endedCreate = gridDragMode === 'create' && e.button === 2;
       const endedResize = gridDragMode !== 'create' && e.button === 0;
       if (endedCreate || endedResize) {
-        normalizeGridRect();
-        // Discard zero / near-zero rects from a stray click without drag.
+        normalizeRect(gridRect);
         if (gridRect) {
           const w = (gridRect.x2 - gridRect.x1) * scale;
           const h = (gridRect.y2 - gridRect.y1) * scale;
@@ -524,6 +849,7 @@ export function createViewport(canvas, {
     if (e.code === 'Space' && !spaceHeld) {
       spaceHeld = true;
       hoveredHandle = null;
+      hoveredCropHandle = null;
       updateCursor();
       e.preventDefault();
     }
@@ -543,7 +869,9 @@ export function createViewport(canvas, {
     spaceHeld = false;
     panning = false;
     gridDragMode = null;
+    cropDragMode = null;
     hoveredHandle = null;
+    hoveredCropHandle = null;
     updateCursor();
   });
 
@@ -556,12 +884,18 @@ export function createViewport(canvas, {
     zoomIn,
     zoomOut,
     resetView,
-    setGridCells,
+    setGridCellsX,
+    setGridCellsY,
     getResolutionEstimate,
     setMosaicEnabled,
     setGridVisible,
     getMosaicEnabled,
     getGridVisible,
     nudgeGridEdge,
+    exportNativeImage,
+    clearGrid,
+    translateGrid,
+    setGridColor,
+    setGridOpacity,
   };
 }
