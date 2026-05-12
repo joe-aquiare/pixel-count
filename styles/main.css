@@ -48,6 +48,13 @@ input:focus {
   z-index: 99;
 }
 
+.toolbar-logo {
+  height: 50%;
+  width: auto;
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
 .tool-btn {
   background: #333;
   color: #eee;

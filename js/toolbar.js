@@ -22,6 +22,10 @@ export function setupToolbar({
   zoomOutBtn.addEventListener('click', () => viewport.zoomOut());
   resetZoomBtn.addEventListener('click', () => viewport.resetView());
 
+  const exportTimestamp = () => new Date()
+    .toISOString()
+    .replace(/[:.]/g, '-');
+
   exportBtn.addEventListener('click', () => {
     const exportCanvas = viewport.exportNativeImage();
     if (!exportCanvas) return;
@@ -30,7 +34,7 @@ export function setupToolbar({
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `pixelcount-${exportCanvas.width}x${exportCanvas.height}.png`;
+      a.download = `pixelcount-${exportCanvas.width}x${exportCanvas.height}-${exportTimestamp()}.png`;
       document.body.appendChild(a);
       a.click();
       a.remove();
