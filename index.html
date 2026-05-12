@@ -14,39 +14,31 @@
     <img class="toolbar-logo" src="media/logo.svg" alt="Pixelcount">
     <button class="tool-btn" id="uploadBtn" title="Upload (U)">
       <i class="fa-solid fa-arrow-up-from-bracket" aria-hidden="true"></i>
-      <span>Upload</span>
     </button>
     <button class="tool-btn" id="exportBtn" title="Export (E)">
       <i class="fa-solid fa-download" aria-hidden="true"></i>
-      <span>Export</span>
     </button>
-    <button class="tool-btn" id="zoomInBtn" title="Zoom In">
+    <button class="tool-btn" id="zoomInBtn" title="Zoom In (Scroll Wheel)">
       <i class="fa-solid fa-magnifying-glass-plus" aria-hidden="true"></i>
-      <span>Zoom In</span>
     </button>
-    <button class="tool-btn" id="zoomOutBtn" title="Zoom Out">
+    <button class="tool-btn" id="zoomOutBtn" title="Zoom Out (Scroll Wheel)">
       <i class="fa-solid fa-magnifying-glass-minus" aria-hidden="true"></i>
-      <span>Zoom Out</span>
     </button>
     <button class="tool-btn" id="resetZoomBtn" title="Reset Zoom (1)">
       <i class="fa-solid fa-down-left-and-up-right-to-center" aria-hidden="true"></i>
-      <span>Reset Zoom</span>
     </button>
     <div class="toolbar-separator" aria-hidden="true"></div>
     <button class="tool-btn toggle-btn" id="mosaicBtn" title="Toggle Mosaic Filter (M)" aria-pressed="false">
       <i class="fa-solid fa-chess-board"></i>
-      <span>Toggle Mosaic Effect</span>
     </button>
     <button class="tool-btn toggle-btn active" id="gridVisBtn" title="Toggle Grid (G)" aria-pressed="true">
       <i class="fa-solid fa-border-none"></i>
-      <span class="label-visible">Toggle Grid Visibility</span>
     </button>
     <button class="tool-btn" id="deleteGridBtn" title="Delete Grid (X)">
       <i class="fa-solid fa-trash" aria-hidden="true"></i>
-      <span>Delete Grid</span>
     </button>
-    <div class="tool-info" title="Estimated source resolution from the image size, grid box size, and grid cells.">
-      <span class="tool-info-label">Estimated Resolution</span>
+    <div class="tool-info" title="Estimated resolution based on the grid size & image crop values.">
+      <span class="tool-info-label">Resolution</span>
       <span class="tool-info-value" id="resolutionValue">&mdash;</span>
     </div>
   </div>
@@ -82,11 +74,11 @@
         <div class="cells-row">
           <span class="floating-label">Horizontal Cells</span>
           <div class="grid-controls">
-            <button id="gridDecBtnX" class="step-btn" type="button" aria-label="Decrease horizontal pixels">
+            <button id="gridDecBtnX" class="step-btn" type="button" aria-label="Decrease horizontal pixels (Left)">
               <i class="fa-solid fa-minus"></i>
             </button>
             <input id="gridInputX" value="8" type="number" min="0" step="1" aria-label="Horizontal pixels">
-            <button id="gridIncBtnX" class="step-btn" type="button" aria-label="Increase horizontal pixels">
+            <button id="gridIncBtnX" class="step-btn" type="button" aria-label="Increase horizontal pixels (Right)">
               <i class="fa-solid fa-plus"></i>
             </button>
           </div>
@@ -94,11 +86,11 @@
         <div class="cells-row">
           <span class="floating-label">Vertical Cells</span>
           <div class="grid-controls">
-            <button id="gridDecBtnY" class="step-btn" type="button" aria-label="Decrease vertical pixels">
+            <button id="gridDecBtnY" class="step-btn" type="button" aria-label="Decrease vertical pixels (Down)">
               <i class="fa-solid fa-minus"></i>
             </button>
             <input id="gridInputY" value="8" type="number" min="0" step="1" aria-label="Vertical pixels">
-            <button id="gridIncBtnY" class="step-btn" type="button" aria-label="Increase vertical pixels">
+            <button id="gridIncBtnY" class="step-btn" type="button" aria-label="Increase vertical pixels (Up)">
               <i class="fa-solid fa-plus"></i>
             </button>
           </div>
@@ -117,28 +109,28 @@
         <br><br>
         <div class="transform-grid">
           <div class="transform-box" aria-hidden="true"></div>
-          <button class="transform-btn" id="topOutBtn" type="button" title="Move top edge up" aria-label="Move top edge up">
+          <button class="transform-btn" id="topOutBtn" type="button" title="Move Top Edge Up (Shift + W)" aria-label="Move Top Edge Up (Shift + W)">
             <i class="fa-solid fa-angle-up"></i>
           </button>
-          <button class="transform-btn" id="topInBtn" type="button" title="Move top edge down" aria-label="Move top edge down">
+          <button class="transform-btn" id="topInBtn" type="button" title="Move Top Edge Down (Ctrl + S)" aria-label="Move Top Edge Down (Ctrl + S)">
             <i class="fa-solid fa-angle-down"></i>
           </button>
-          <button class="transform-btn" id="leftOutBtn" type="button" title="Move left edge left" aria-label="Move left edge left">
+          <button class="transform-btn" id="leftOutBtn" type="button" title="Move Left Edge Left (Shift + A)" aria-label="Move Left edge left">
             <i class="fa-solid fa-angle-left"></i>
           </button>
-          <button class="transform-btn" id="leftInBtn" type="button" title="Move left edge right" aria-label="Move left edge right">
+          <button class="transform-btn" id="leftInBtn" type="button" title="Move Left Edge Right (Ctrl + D)" aria-label="Move Left edge right">
             <i class="fa-solid fa-angle-right"></i>
           </button>
-          <button class="transform-btn" id="rightInBtn" type="button" title="Move right edge left" aria-label="Move right edge left">
+          <button class="transform-btn" id="rightInBtn" type="button" title="Move Right Edge Left (Ctrl + A)" aria-label="Move Right edge left">
             <i class="fa-solid fa-angle-left"></i>
           </button>
-          <button class="transform-btn" id="rightOutBtn" type="button" title="Move right edge right" aria-label="Move right edge right">
+          <button class="transform-btn" id="rightOutBtn" type="button" title="Move Right Edge Right (Shift + D)" aria-label="Move Right edge right">
             <i class="fa-solid fa-angle-right"></i>
           </button>
-          <button class="transform-btn" id="bottomInBtn" type="button" title="Move bottom edge up" aria-label="Move bottom edge up">
+          <button class="transform-btn" id="bottomInBtn" type="button" title="Move Bottom Edge Up (Ctrl + W)" aria-label="Move Bottom Edge Up (Ctrl + W)">
             <i class="fa-solid fa-angle-up"></i>
           </button>
-          <button class="transform-btn" id="bottomOutBtn" type="button" title="Move bottom edge down" aria-label="Move bottom edge down">
+          <button class="transform-btn" id="bottomOutBtn" type="button" title="Move Bottom Edge Down (Shift + S)" aria-label="Move Bottom Edge Down (Shift + S)">
             <i class="fa-solid fa-angle-down"></i>
           </button>
         </div>
