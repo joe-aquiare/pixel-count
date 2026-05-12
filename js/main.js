@@ -195,9 +195,58 @@ const clickIfActive = (btn) => {
   btn.click();
 };
 
-document.addEventListener('keydown', (e) => {
-  if (e.ctrlKey || e.altKey || e.metaKey) return;
+let shortcutSpaceHeld = false;
+
+const handleKeydown = (e) => {
+  if (e.altKey || e.metaKey) return;
+  if (e.code === 'Space') {
+    shortcutSpaceHeld = true;
+    return;
+  }
+
+  const isArrow = e.key === 'ArrowLeft'
+    || e.key === 'ArrowRight'
+    || e.key === 'ArrowUp'
+    || e.key === 'ArrowDown';
+
+  if (isArrow) {
+    if (e.ctrlKey && e.shiftKey) {
+      e.preventDefault();
+      e.stopPropagation();
+      return;
+    }
+
+    if (e.shiftKey) {
+      if (e.key === 'ArrowLeft') clickIfActive(leftOutBtn);
+      if (e.key === 'ArrowRight') clickIfActive(rightOutBtn);
+      if (e.key === 'ArrowUp') clickIfActive(topOutBtn);
+      if (e.key === 'ArrowDown') clickIfActive(bottomOutBtn);
+    } else if (e.ctrlKey) {
+      if (e.key === 'ArrowLeft') clickIfActive(rightInBtn);
+      if (e.key === 'ArrowRight') clickIfActive(leftInBtn);
+      if (e.key === 'ArrowUp') clickIfActive(bottomInBtn);
+      if (e.key === 'ArrowDown') clickIfActive(topInBtn);
+    } else if (shortcutSpaceHeld) {
+      if (e.key === 'ArrowLeft') viewport.translateGrid(-getNudge(), 0);
+      if (e.key === 'ArrowRight') viewport.translateGrid(getNudge(), 0);
+      if (e.key === 'ArrowUp') viewport.translateGrid(0, -getNudge());
+      if (e.key === 'ArrowDown') viewport.translateGrid(0, getNudge());
+    } else if (!isTypingInInput()) {
+      if (e.key === 'ArrowLeft') clickIfActive(gridDecBtnX);
+      if (e.key === 'ArrowRight') clickIfActive(gridIncBtnX);
+      if (e.key === 'ArrowUp') clickIfActive(gridIncBtnY);
+      if (e.key === 'ArrowDown') clickIfActive(gridDecBtnY);
+    } else {
+      return;
+    }
+
+    e.preventDefault();
+    e.stopPropagation();
+    return;
+  }
+
   if (isTypingInInput()) return;
+  if (e.ctrlKey) return;
 
   switch (e.key) {
     case '+':
@@ -239,43 +288,15 @@ document.addEventListener('keydown', (e) => {
       clickIfActive(deleteGridBtn);
       e.preventDefault();
       break;
-    case 'a':
-    case 'A':
-      clickIfActive(gridDecBtnX);
-      e.preventDefault();
-      break;
-    case 'd':
-    case 'D':
-      clickIfActive(gridIncBtnX);
-      e.preventDefault();
-      break;
-    case 'w':
-    case 'W':
-      clickIfActive(gridIncBtnY);
-      e.preventDefault();
-      break;
-    case 's':
-    case 'S':
-      clickIfActive(gridDecBtnY);
-      e.preventDefault();
-      break;
-    case 'ArrowLeft':
-      viewport.translateGrid(-getNudge(), 0);
-      e.preventDefault();
-      break;
-    case 'ArrowRight':
-      viewport.translateGrid(getNudge(), 0);
-      e.preventDefault();
-      break;
-    case 'ArrowUp':
-      viewport.translateGrid(0, -getNudge());
-      e.preventDefault();
-      break;
-    case 'ArrowDown':
-      viewport.translateGrid(0, getNudge());
-      e.preventDefault();
-      break;
   }
+};
+
+document.addEventListener('keydown', handleKeydown, { capture: true });
+document.addEventListener('keyup', (e) => {
+  if (e.code === 'Space') shortcutSpaceHeld = false;
+}, { capture: true });
+window.addEventListener('blur', () => {
+  shortcutSpaceHeld = false;
 });
 
 setupImageLoader({
